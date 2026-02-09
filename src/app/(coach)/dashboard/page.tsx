@@ -164,7 +164,7 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle();
 
-  const formatCheckinDate = (dateStr: string) => {
+  const formatCheckinDay = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
     const diffDays = Math.ceil(
@@ -175,6 +175,15 @@ export default async function DashboardPage() {
     if (diffDays <= 7)
       return d.toLocaleDateString("en-US", { weekday: "long" });
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const formatCheckinFullDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   return (
@@ -215,15 +224,20 @@ export default async function DashboardPage() {
             </p>
             <p className="text-2xl font-bold text-txt-900 mt-1">
               {nextCheckin
-                ? formatCheckinDate(nextCheckin.scheduled_at)
+                ? formatCheckinDay(nextCheckin.scheduled_at)
                 : "—"}
             </p>
             {nextCheckin && (
-              <p className="text-xs text-txt-500 mt-0.5">
-                with{" "}
-                {(nextCheckin.client as unknown as { full_name: string })
-                  ?.full_name || "Client"}
-              </p>
+              <>
+                <p className="text-xs text-txt-500 mt-0.5">
+                  {formatCheckinFullDate(nextCheckin.scheduled_at)}
+                </p>
+                <p className="text-xs text-txt-500 mt-0.5">
+                  with{" "}
+                  {(nextCheckin.client as unknown as { full_name: string })
+                    ?.full_name || "Client"}
+                </p>
+              </>
             )}
           </div>
         </div>
