@@ -15,9 +15,7 @@ function SignupForm() {
   const [fullName, setFullName] = useState(inviteName || "");
   const [email, setEmail] = useState(inviteEmail || "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"coach" | "client">(
-    isInvite ? "client" : "coach"
-  );
+  const [role, setRole] = useState<"coach" | "client">("client");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);

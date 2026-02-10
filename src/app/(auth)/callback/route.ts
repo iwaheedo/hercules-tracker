@@ -19,12 +19,15 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role, approved")
           .eq("id", user.id)
           .single();
 
         if (profile?.role === "client") {
           return NextResponse.redirect(`${origin}/portal`);
+        }
+        if (profile?.role === "coach" && !profile?.approved) {
+          return NextResponse.redirect(`${origin}/pending-approval`);
         }
         return NextResponse.redirect(`${origin}/dashboard`);
       }

@@ -16,7 +16,7 @@ export default async function Home() {
   // Try to fetch the profile
   let { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, approved")
     .eq("id", user.id)
     .single();
 
@@ -29,9 +29,9 @@ export default async function Home() {
       .insert({
         id: user.id,
         full_name: meta.full_name || user.email?.split("@")[0] || "User",
-        role: meta.role || "coach",
+        role: meta.role || "client",
       })
-      .select("role")
+      .select("role, approved")
       .single();
 
     if (newProfile) {
@@ -80,6 +80,8 @@ export default async function Home() {
 
   if (profile.role === "client") {
     redirect("/portal");
+  } else if (profile.role === "coach" && !profile.approved) {
+    redirect("/pending-approval");
   } else {
     redirect("/dashboard");
   }

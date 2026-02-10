@@ -32,6 +32,11 @@ export default async function CoachLayout({
     redirect("/portal");
   }
 
+  if (!profile.approved) {
+    // Coach not yet approved — show pending page
+    redirect("/pending-approval");
+  }
+
   return (
     <div className="min-h-screen bg-surface-50">
       <CoachSidebar coachName={profile.full_name} />

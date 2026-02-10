@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/status-badge";
 import { CategoryTag } from "@/components/category-tag";
+import { AdminApprovals } from "./admin-approvals";
 import Link from "next/link";
 
 function getCurrentWeekStart(): string {
@@ -30,6 +31,28 @@ export default async function DashboardPage() {
     .select("full_name")
     .eq("id", user!.id)
     .single();
+
+  // Check if this coach is the super-admin
+  const isSuperCoach = user!.email === "waheed@empasco.com";
+
+  // If super-admin, fetch pending coach signups
+  let pendingCoaches: Array<{
+    id: string;
+    full_name: string;
+    email: string | null;
+    created_at: string;
+  }> = [];
+
+  if (isSuperCoach) {
+    const { data: pending } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, created_at")
+      .eq("role", "coach")
+      .eq("approved", false)
+      .order("created_at", { ascending: true });
+
+    pendingCoaches = pending || [];
+  }
 
   // Get active clients count
   const { count: clientCount } = await supabase
@@ -241,6 +264,11 @@ export default async function DashboardPage() {
             )}
           </div>
         </div>
+
+        {/* Admin: Pending Coach Approvals */}
+        {isSuperCoach && pendingCoaches.length > 0 && (
+          <AdminApprovals pendingCoaches={pendingCoaches} />
+        )}
 
         {/* This Week's Goals */}
         <div className="bg-white rounded-xl border border-surface-200 p-5 mb-6">
