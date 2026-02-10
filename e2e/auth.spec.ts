@@ -24,7 +24,7 @@ test.describe("Authentication", () => {
     await page.goto("/login");
 
     // Check key elements exist
-    await expect(page.locator("text=Hercules Tracker")).toBeVisible();
+    await expect(page.locator("text=Hercules")).toBeVisible();
     await expect(page.locator("text=Welcome back")).toBeVisible();
     await expect(page.locator("text=Sign in to your account")).toBeVisible();
     await expect(page.locator('input[type="email"]')).toBeVisible();

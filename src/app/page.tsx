@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { Homepage } from "@/components/homepage";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -7,8 +8,9 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Unauthenticated users see the homepage
   if (!user) {
-    redirect("/login");
+    return <Homepage />;
   }
 
   // Try to fetch the profile

@@ -55,7 +55,7 @@ export function generateICS(params: ICSParams): string {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Hercules Tracker//Check-in//EN",
+    "PRODID:-//Hercules//Check-in//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:REQUEST",
     "BEGIN:VEVENT",

@@ -55,7 +55,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <span className="text-xl font-bold text-txt-900 tracking-tight">
-            Hercules Tracker
+            Hercules
           </span>
         </div>
 

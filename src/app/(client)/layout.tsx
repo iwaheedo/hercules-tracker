@@ -57,7 +57,7 @@ export default async function ClientLayout({
                 </svg>
               </div>
               <span className="text-sm font-bold text-txt-900 tracking-tight">
-                Hercules Tracker
+                Hercules
               </span>
             </div>
 

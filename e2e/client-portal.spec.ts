@@ -53,7 +53,7 @@ test.describe("Client Portal", () => {
     await expect(page.locator("text=Your Coach")).toBeVisible();
   });
 
-  test("portal header shows Hercules Tracker branding", async ({ page }) => {
-    await expect(page.locator("text=Hercules Tracker")).toBeVisible();
+  test("portal header shows Hercules branding", async ({ page }) => {
+    await expect(page.locator("text=Hercules")).toBeVisible();
   });
 });

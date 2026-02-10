@@ -35,20 +35,26 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public routes that don't need auth
-  const isAuthRoute =
+  const isPublicRoute =
+    request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup") ||
     request.nextUrl.pathname.startsWith("/callback");
 
   // If not signed in and trying to access a protected route → login
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // If signed in and on an auth route → redirect to home
+  // If signed in and on an auth route → redirect to home (root page handles role-based routing)
   // EXCEPT: allow /signup with invite params (coach may be testing, or user needs to sign out)
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup") ||
+    request.nextUrl.pathname.startsWith("/callback");
+
   if (user && isAuthRoute) {
     const hasInvite = request.nextUrl.pathname.startsWith("/signup") &&
       request.nextUrl.searchParams.has("invite");

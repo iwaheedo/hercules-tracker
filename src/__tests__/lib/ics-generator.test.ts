@@ -18,7 +18,7 @@ describe("generateICS", () => {
 
     expect(ics).toContain("BEGIN:VCALENDAR");
     expect(ics).toContain("VERSION:2.0");
-    expect(ics).toContain("PRODID:-//Hercules Tracker//Check-in//EN");
+    expect(ics).toContain("PRODID:-//Hercules//Check-in//EN");
     expect(ics).toContain("BEGIN:VEVENT");
     expect(ics).toContain("END:VEVENT");
     expect(ics).toContain("END:VCALENDAR");

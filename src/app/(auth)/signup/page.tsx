@@ -133,8 +133,8 @@ function SignupForm() {
         </h1>
         <p className="text-sm text-txt-500 mt-1">
           {isInvite
-            ? "Your coach has invited you to Hercules Tracker"
-            : "Get started with Hercules Tracker"}
+            ? "Your coach has invited you to Hercules"
+            : "Get started with Hercules"}
         </p>
       </div>
 
@@ -254,7 +254,7 @@ function SignupFormFallback() {
       <div className="text-center mb-6">
         <h1 className="text-xl font-bold text-txt-900">Create account</h1>
         <p className="text-sm text-txt-500 mt-1">
-          Get started with Hercules Tracker
+          Get started with Hercules
         </p>
       </div>
       <div className="space-y-4">
@@ -289,7 +289,7 @@ export default function SignupPage() {
             </svg>
           </div>
           <span className="text-xl font-bold text-txt-900 tracking-tight">
-            Hercules Tracker
+            Hercules
           </span>
         </div>
 

@@ -77,7 +77,7 @@ export function CoachSidebar({ coachName }: { coachName: string }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <span className="text-sm font-bold text-txt-900 tracking-tight">Hercules Tracker</span>
+          <span className="text-sm font-bold text-txt-900 tracking-tight">Hercules</span>
         </div>
 
         {/* Nav links */}
