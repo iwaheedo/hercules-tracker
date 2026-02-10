@@ -84,7 +84,7 @@ async function setup() {
   console.log("TEST_COACH_PASSWORD=E2eTestCoach!123");
   console.log("TEST_CLIENT_EMAIL=waheed+e2eclient@empasco.com");
   console.log("TEST_CLIENT_PASSWORD=E2eTestClient!123");
-  console.log("PLAYWRIGHT_TEST_BASE_URL=https://app-green-omega-46.vercel.app");
+  console.log("PLAYWRIGHT_TEST_BASE_URL=https://hercules-coaching.vercel.app");
 }
 
 setup().catch(console.error);

@@ -7,7 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
  * or against the local dev server otherwise.
  *
  * Required env vars for E2E:
- *   PLAYWRIGHT_TEST_BASE_URL  — e.g. https://app-green-omega-46.vercel.app
+ *   PLAYWRIGHT_TEST_BASE_URL  — e.g. https://hercules-coaching.vercel.app
  *   TEST_COACH_EMAIL          — coach login email
  *   TEST_COACH_PASSWORD       — coach login password
  *   TEST_CLIENT_EMAIL         — client login email
