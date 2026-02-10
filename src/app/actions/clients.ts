@@ -143,15 +143,26 @@ export async function inviteClient(email: string, name: string) {
     return { error: "Only coaches can invite clients", inviteLink: null, linked: false };
   }
 
-  // Check if a client with this name already exists in the system
-  const { data: allClients } = await supabase
+  // Check if a client with this email already exists in the system
+  const { data: emailMatch } = await supabase
     .from("profiles")
     .select("id, full_name, role")
-    .eq("role", "client");
+    .eq("role", "client")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
 
-  const matchingClient = allClients?.find(
-    (c) => c.full_name?.toLowerCase() === name.toLowerCase()
-  );
+  // Fall back to name match if no email match
+  let matchingClient = emailMatch;
+  if (!matchingClient) {
+    const { data: allClients } = await supabase
+      .from("profiles")
+      .select("id, full_name, role")
+      .eq("role", "client");
+
+    matchingClient = allClients?.find(
+      (c) => c.full_name?.toLowerCase() === name.toLowerCase()
+    ) ?? null;
+  }
 
   if (matchingClient) {
     // Check if already actively linked
