@@ -2,6 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import {
+  isValidUUID,
+  isNonEmptyString,
+  isOptionalString,
+  isValidDate,
+  isValidWeeklyStatus,
+} from "@/lib/validation";
 
 function getCurrentWeekStart(): string {
   const today = new Date();
@@ -107,6 +114,13 @@ export async function createWeeklyGoal(formData: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  // Input validation
+  if (!isValidUUID(formData.quarterlyGoalId)) return { error: "Invalid quarterly goal ID" };
+  if (!isValidUUID(formData.clientId)) return { error: "Invalid client ID" };
+  if (!isNonEmptyString(formData.title)) return { error: "Title is required (max 200 chars)" };
+  if (!isValidDate(formData.weekStart)) return { error: "Invalid week start date" };
+  if (!isValidDate(formData.weekEnd)) return { error: "Invalid week end date" };
+
   const { data, error } = await supabase
     .from("weekly_goals")
     .insert({
@@ -151,6 +165,13 @@ export async function updateWeeklyGoal(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Input validation
+  if (!isValidUUID(goalId)) return { error: "Invalid goal ID" };
+  if (updates.title !== undefined && !isNonEmptyString(updates.title)) return { error: "Title is required (max 200 chars)" };
+  if (updates.status !== undefined && !isValidWeeklyStatus(updates.status)) return { error: "Invalid status" };
+  if (updates.coachNotes !== undefined && !isOptionalString(updates.coachNotes)) return { error: "Notes too long (max 2000 chars)" };
+  if (updates.clientNotes !== undefined && !isOptionalString(updates.clientNotes)) return { error: "Notes too long (max 2000 chars)" };
 
   const { data: current } = await supabase
     .from("weekly_goals")

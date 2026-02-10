@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { isNonEmptyString, isOptionalString } from "@/lib/validation";
 
 export async function updateProfile(data: {
   fullName: string;
@@ -12,6 +13,10 @@ export async function updateProfile(data: {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Input validation
+  if (!isNonEmptyString(data.fullName)) return { error: "Name is required (max 200 chars)" };
+  if (data.phone && !isOptionalString(data.phone, 30)) return { error: "Phone number too long" };
 
   const { error } = await supabase
     .from("profiles")

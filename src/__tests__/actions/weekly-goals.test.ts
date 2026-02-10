@@ -16,10 +16,16 @@ import {
 } from "@/app/actions/weekly-goals";
 import { revalidatePath } from "next/cache";
 
+const COACH_ID = "11111111-1111-1111-1111-111111111111";
+const CLIENT_ID = "22222222-2222-2222-2222-222222222222";
+const WEEKLY_GOAL_ID = "55555555-5555-5555-5555-555555555555";
+const QUARTERLY_GOAL_ID = "66666666-6666-6666-6666-666666666666";
+const NONEXISTENT_ID = "99999999-9999-9999-9999-999999999999";
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockSupabase.auth.getUser.mockResolvedValue({
-    data: { user: { id: "coach-1", email: "coach@test.com" } },
+    data: { user: { id: COACH_ID, email: "coach@test.com" } },
     error: null,
   });
 });
@@ -27,11 +33,11 @@ beforeEach(() => {
 describe("getWeeklyGoals", () => {
   it("returns weekly goals for a client and week", async () => {
     const mockGoals = [
-      { id: "wg1", title: "Exercise", status: "pending", week_start: "2026-02-09" },
+      { id: WEEKLY_GOAL_ID, title: "Exercise", status: "pending", week_start: "2026-02-09" },
     ];
     mockSupabase.from.mockReturnValue(chainResult({ data: mockGoals, error: null }));
 
-    const result = await getWeeklyGoals("client-1", "2026-02-09");
+    const result = await getWeeklyGoals(CLIENT_ID, "2026-02-09");
 
     expect(result.data).toEqual(mockGoals);
     expect(result.error).toBeNull();
@@ -41,7 +47,7 @@ describe("getWeeklyGoals", () => {
   it("defaults to current week when weekStart is omitted", async () => {
     mockSupabase.from.mockReturnValue(chainResult({ data: [], error: null }));
 
-    const result = await getWeeklyGoals("client-1");
+    const result = await getWeeklyGoals(CLIENT_ID);
 
     expect(result.data).toEqual([]);
     expect(result.error).toBeNull();
@@ -50,7 +56,7 @@ describe("getWeeklyGoals", () => {
   it("returns error when not authenticated", async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
-    const result = await getWeeklyGoals("client-1");
+    const result = await getWeeklyGoals(CLIENT_ID);
 
     expect(result.error).toBe("Not authenticated");
   });
@@ -77,7 +83,7 @@ describe("getWeeklyGoalsAllClients", () => {
 
 describe("createWeeklyGoal", () => {
   it("creates a weekly goal with audit log", async () => {
-    const newGoal = { id: "wg-new", title: "New Weekly" };
+    const newGoal = { id: "dddddddd-dddd-dddd-dddd-dddddddddddd", title: "New Weekly" };
 
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === "weekly_goals") return chainResult({ data: newGoal, error: null });
@@ -86,8 +92,8 @@ describe("createWeeklyGoal", () => {
     });
 
     const result = await createWeeklyGoal({
-      quarterlyGoalId: "qg1",
-      clientId: "client-1",
+      quarterlyGoalId: QUARTERLY_GOAL_ID,
+      clientId: CLIENT_ID,
       title: "New Weekly",
       weekStart: "2026-02-09",
       weekEnd: "2026-02-15",
@@ -97,7 +103,7 @@ describe("createWeeklyGoal", () => {
     expect(result.data).toEqual(newGoal);
     expect(mockSupabase.from).toHaveBeenCalledWith("weekly_goals");
     expect(mockSupabase.from).toHaveBeenCalledWith("goal_changes");
-    expect(revalidatePath).toHaveBeenCalledWith("/clients/client-1");
+    expect(revalidatePath).toHaveBeenCalledWith(`/clients/${CLIENT_ID}`);
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(revalidatePath).toHaveBeenCalledWith("/portal");
   });
@@ -106,8 +112,8 @@ describe("createWeeklyGoal", () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
     const result = await createWeeklyGoal({
-      quarterlyGoalId: "qg1",
-      clientId: "client-1",
+      quarterlyGoalId: QUARTERLY_GOAL_ID,
+      clientId: CLIENT_ID,
       title: "Test",
       weekStart: "2026-02-09",
       weekEnd: "2026-02-15",
@@ -120,12 +126,12 @@ describe("createWeeklyGoal", () => {
 describe("updateWeeklyGoal", () => {
   it("updates a weekly goal and creates audit entries", async () => {
     const current = {
-      id: "wg1",
+      id: WEEKLY_GOAL_ID,
       title: "Old",
       status: "pending",
       coach_notes: null,
       client_notes: null,
-      client_id: "client-1",
+      client_id: CLIENT_ID,
     };
 
     mockSupabase.from.mockImplementation((table: string) => {
@@ -134,10 +140,10 @@ describe("updateWeeklyGoal", () => {
       return chainResult({ data: null, error: null });
     });
 
-    const result = await updateWeeklyGoal("wg1", { status: "completed" });
+    const result = await updateWeeklyGoal(WEEKLY_GOAL_ID, { status: "completed" });
 
     expect(result.error).toBeNull();
-    expect(revalidatePath).toHaveBeenCalledWith("/clients/client-1");
+    expect(revalidatePath).toHaveBeenCalledWith(`/clients/${CLIENT_ID}`);
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(revalidatePath).toHaveBeenCalledWith("/portal");
   });
@@ -145,7 +151,7 @@ describe("updateWeeklyGoal", () => {
   it("returns error when goal not found", async () => {
     mockSupabase.from.mockReturnValue(chainResult({ data: null, error: null }));
 
-    const result = await updateWeeklyGoal("nonexistent", { status: "completed" });
+    const result = await updateWeeklyGoal(NONEXISTENT_ID, { status: "completed" });
 
     expect(result.error).toBe("Weekly goal not found");
   });
@@ -154,10 +160,10 @@ describe("updateWeeklyGoal", () => {
 describe("updateWeeklyGoalStatus", () => {
   it("delegates to updateWeeklyGoal with status and clientNotes", async () => {
     const current = {
-      id: "wg1",
+      id: WEEKLY_GOAL_ID,
       status: "pending",
       client_notes: null,
-      client_id: "client-1",
+      client_id: CLIENT_ID,
     };
 
     mockSupabase.from.mockImplementation((table: string) => {
@@ -166,7 +172,7 @@ describe("updateWeeklyGoalStatus", () => {
       return chainResult({ data: null, error: null });
     });
 
-    const result = await updateWeeklyGoalStatus("wg1", "completed", "Finished!");
+    const result = await updateWeeklyGoalStatus(WEEKLY_GOAL_ID, "completed", "Finished!");
 
     expect(result.error).toBeNull();
   });
@@ -176,22 +182,22 @@ describe("deleteWeeklyGoal", () => {
   it("deletes a weekly goal and revalidates", async () => {
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === "weekly_goals") {
-        return chainResult({ data: { client_id: "client-1" }, error: null });
+        return chainResult({ data: { client_id: CLIENT_ID }, error: null });
       }
       return chainResult({ data: null, error: null });
     });
 
-    const result = await deleteWeeklyGoal("wg1");
+    const result = await deleteWeeklyGoal(WEEKLY_GOAL_ID);
 
     expect(result.error).toBeNull();
-    expect(revalidatePath).toHaveBeenCalledWith("/clients/client-1");
+    expect(revalidatePath).toHaveBeenCalledWith(`/clients/${CLIENT_ID}`);
     expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
   it("returns error when goal not found", async () => {
     mockSupabase.from.mockReturnValue(chainResult({ data: null, error: null }));
 
-    const result = await deleteWeeklyGoal("nonexistent");
+    const result = await deleteWeeklyGoal(NONEXISTENT_ID);
 
     expect(result.error).toBe("Weekly goal not found");
   });

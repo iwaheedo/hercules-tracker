@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { isValidUUID, isValidDate, isOptionalString, isValidCheckinStatus } from "@/lib/validation";
 
 export async function getCheckins(clientId: string) {
   const supabase = await createClient();
@@ -86,8 +87,16 @@ export async function createCheckin(formData: {
     scheduledAt,
     coachNotes,
     isRecurring = false,
-    recurrenceWeeks = 12,
+    recurrenceWeeks: rawWeeks = 12,
   } = formData;
+
+  // Input validation
+  if (!clientId || typeof clientId !== "string") return { error: "Invalid client" };
+  if (!scheduledAt || isNaN(Date.parse(scheduledAt))) return { error: "Invalid date" };
+  if (coachNotes && coachNotes.length > 2000) return { error: "Notes too long (max 2000 chars)" };
+
+  // Cap recurrence to 52 weeks (1 year) to prevent abuse
+  const recurrenceWeeks = Math.min(Math.max(1, Math.floor(rawWeeks)), 52);
 
   if (isRecurring) {
     // Generate a recurrence group ID
@@ -140,6 +149,12 @@ export async function updateCheckin(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Input validation
+  if (!isValidUUID(checkinId)) return { error: "Invalid check-in ID" };
+  if (updates.status !== undefined && !isValidCheckinStatus(updates.status)) return { error: "Invalid status" };
+  if (updates.coachNotes !== undefined && !isOptionalString(updates.coachNotes)) return { error: "Notes too long (max 2000 chars)" };
+  if (updates.scheduledAt !== undefined && !isValidDate(updates.scheduledAt)) return { error: "Invalid date" };
 
   const updateData: Record<string, unknown> = {};
   if (updates.status !== undefined) updateData.status = updates.status;

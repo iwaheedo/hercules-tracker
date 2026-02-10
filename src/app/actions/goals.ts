@@ -2,6 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import {
+  isValidUUID,
+  isNonEmptyString,
+  isOptionalString,
+  isValidCategory,
+  isValidDate,
+  isValidGoalStatus,
+  isValidProgress,
+} from "@/lib/validation";
 
 export async function getGoalsByClient(clientId: string) {
   const supabase = await createClient();
@@ -33,6 +42,13 @@ export async function createGoal(formData: {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Input validation
+  if (!isValidUUID(formData.clientId)) return { error: "Invalid client ID" };
+  if (!isNonEmptyString(formData.title)) return { error: "Title is required (max 200 chars)" };
+  if (!isOptionalString(formData.description)) return { error: "Description too long (max 2000 chars)" };
+  if (!isValidCategory(formData.category)) return { error: "Invalid category" };
+  if (formData.targetDate && !isValidDate(formData.targetDate)) return { error: "Invalid target date" };
 
   // Determine coach_id: if the user IS the client, look up their linked coach
   let coachId = user.id; // default: user is the coach
@@ -95,6 +111,15 @@ export async function updateGoal(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Input validation
+  if (!isValidUUID(goalId)) return { error: "Invalid goal ID" };
+  if (updates.title !== undefined && !isNonEmptyString(updates.title)) return { error: "Title is required (max 200 chars)" };
+  if (updates.description !== undefined && !isOptionalString(updates.description)) return { error: "Description too long" };
+  if (updates.category !== undefined && !isValidCategory(updates.category)) return { error: "Invalid category" };
+  if (updates.targetDate !== undefined && updates.targetDate && !isValidDate(updates.targetDate)) return { error: "Invalid date" };
+  if (updates.status !== undefined && !isValidGoalStatus(updates.status)) return { error: "Invalid status" };
+  if (updates.progress !== undefined && !isValidProgress(updates.progress)) return { error: "Progress must be 0-100" };
 
   // Get current values for audit log
   const { data: current } = await supabase

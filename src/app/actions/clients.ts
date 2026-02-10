@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { isValidUUID, isValidEmail, isNonEmptyString } from "@/lib/validation";
 
 export async function getCoachClients() {
   const supabase = await createClient();
@@ -127,6 +128,10 @@ export async function inviteClient(email: string, name: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated", inviteLink: null, linked: false };
 
+  // Input validation
+  if (!isValidEmail(email)) return { error: "Invalid email address", inviteLink: null, linked: false };
+  if (!isNonEmptyString(name)) return { error: "Name is required (max 200 chars)", inviteLink: null, linked: false };
+
   // Verify this user is a coach
   const { data: profile } = await supabase
     .from("profiles")
@@ -225,6 +230,13 @@ export async function removeClient(clientId: string) {
 
 export async function linkClientById(coachId: string, clientId: string) {
   const supabase = await createClient();
+
+  // Verify caller is authenticated and is the coach being linked
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated", alreadyLinked: false };
+  if (user.id !== coachId) return { error: "Unauthorised", alreadyLinked: false };
 
   // Check if already linked
   const { data: existing } = await supabase

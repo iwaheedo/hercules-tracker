@@ -4,11 +4,11 @@
  * Creates test coach and client accounts in Supabase for E2E testing.
  * Run once: npx tsx e2e/setup-test-accounts.ts
  *
- * After running, add these to your .env.local (and as GitHub secrets):
- *   TEST_COACH_EMAIL=waheed+e2ecoach@empasco.com
- *   TEST_COACH_PASSWORD=E2eTestCoach!123
- *   TEST_CLIENT_EMAIL=waheed+e2eclient@empasco.com
- *   TEST_CLIENT_PASSWORD=E2eTestClient!123
+ * Required environment variables (set in .env.local):
+ *   TEST_COACH_EMAIL
+ *   TEST_COACH_PASSWORD
+ *   TEST_CLIENT_EMAIL
+ *   TEST_CLIENT_PASSWORD
  *
  * NOTE: The coach test account needs to be approved by the super-admin
  * (waheed@empasco.com) via the dashboard before E2E coach tests will work.
@@ -30,24 +30,29 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const TEST_ACCOUNTS = [
   {
     label: "Coach",
-    email: "waheed+e2ecoach@empasco.com",
-    password: "E2eTestCoach!123",
+    email: process.env.TEST_COACH_EMAIL,
+    password: process.env.TEST_COACH_PASSWORD,
     metadata: { full_name: "E2E Test Coach", role: "coach" },
   },
   {
     label: "Client",
-    email: "waheed+e2eclient@empasco.com",
-    password: "E2eTestClient!123",
+    email: process.env.TEST_CLIENT_EMAIL,
+    password: process.env.TEST_CLIENT_PASSWORD,
     metadata: { full_name: "E2E Test Client", role: "client" },
   },
 ];
 
 async function setup() {
   for (const account of TEST_ACCOUNTS) {
+    if (!account.email || !account.password) {
+      console.error(`  ✗ ${account.label}: Missing TEST_${account.label.toUpperCase()}_EMAIL or TEST_${account.label.toUpperCase()}_PASSWORD env vars`);
+      continue;
+    }
+
     console.log(`\nCreating ${account.label} account (${account.email})...`);
 
     // Try signing in first — account may already exist
-    const { data: signIn, error: signInError } =
+    const { data: signIn } =
       await supabase.auth.signInWithPassword({
         email: account.email,
         password: account.password,
@@ -79,12 +84,7 @@ async function setup() {
     }
   }
 
-  console.log("\n--- Environment variables for .env.local and GitHub secrets ---");
-  console.log("TEST_COACH_EMAIL=waheed+e2ecoach@empasco.com");
-  console.log("TEST_COACH_PASSWORD=E2eTestCoach!123");
-  console.log("TEST_CLIENT_EMAIL=waheed+e2eclient@empasco.com");
-  console.log("TEST_CLIENT_PASSWORD=E2eTestClient!123");
-  console.log("PLAYWRIGHT_TEST_BASE_URL=https://hercules-coaching.vercel.app");
+  console.log("\nDone. Make sure the test env vars are also set as GitHub secrets.");
 }
 
 setup().catch(console.error);
