@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Homepage() {
   return (
@@ -229,8 +230,15 @@ export function Homepage() {
       {/* ═══ FOUNDER / COACH ═══ */}
       <section id="coach" className="py-24 px-8 bg-surface-50">
         <div className="max-w-[900px] mx-auto flex flex-col md:flex-row items-center gap-16">
-          <div className="flex-shrink-0 w-[280px] h-[280px] rounded-2xl flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg, var(--color-surface-200), var(--color-surface-100))" }}>
-            <span className="text-[80px] font-extrabold text-surface-200 font-serif">W</span>
+          <div className="flex-shrink-0 w-[280px] h-[280px] rounded-2xl overflow-hidden relative">
+            <Image
+              src="/waheed.png"
+              alt="Waheed Nabeel"
+              fill
+              className="object-cover"
+              sizes="280px"
+              priority
+            />
           </div>
           <div className="flex-1 text-center md:text-left">
             <p className="text-xs font-bold tracking-widest uppercase text-brand-500 mb-2">Your Coach</p>
@@ -241,7 +249,7 @@ export function Homepage() {
             </p>
             <div className="flex items-center gap-3 justify-center md:justify-start">
               <a
-                href="https://www.linkedin.com/feed/"
+                href="https://www.linkedin.com/in/iwaheed/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0A66C2] text-white text-sm font-semibold rounded-lg hover:bg-[#004182] transition no-underline"
