@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { CategoryTag } from "@/components/category-tag";
 import { WeekPicker, getCurrentWeekStart, getWeekEnd } from "@/components/week-picker";
-import { createWeeklyGoal, updateWeeklyGoal } from "@/app/actions/weekly-goals";
+import { createWeeklyGoal, updateWeeklyGoal, deleteWeeklyGoal } from "@/app/actions/weekly-goals";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface WeeklyGoal {
@@ -43,6 +43,7 @@ export function WeeklyTab({
   weekStart: string;
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingNotes, setSavingNotes] = useState<string | null>(null);
   const router = useRouter();
@@ -77,6 +78,12 @@ export function WeeklyTab({
     setSavingNotes(goalId);
     await updateWeeklyGoal(goalId, { coachNotes: notes });
     setSavingNotes(null);
+  }
+
+  async function handleDelete(goalId: string) {
+    if (!confirm("Delete this weekly goal?")) return;
+    await deleteWeeklyGoal(goalId);
+    router.refresh();
   }
 
   // Status counts
@@ -139,14 +146,28 @@ export function WeeklyTab({
         </div>
       ) : (
         <div className="space-y-3 mb-4">
-          {weeklyGoals.map((goal) => (
-            <WeeklyGoalCard
-              key={goal.id}
-              goal={goal}
-              savingNotes={savingNotes === goal.id}
-              onSaveNotes={(notes) => handleSaveCoachNotes(goal.id, notes)}
-            />
-          ))}
+          {weeklyGoals.map((goal) =>
+            editingId === goal.id ? (
+              <WeeklyEditForm
+                key={goal.id}
+                goal={goal}
+                onCancel={() => setEditingId(null)}
+                onSaved={() => {
+                  setEditingId(null);
+                  router.refresh();
+                }}
+              />
+            ) : (
+              <WeeklyGoalCard
+                key={goal.id}
+                goal={goal}
+                savingNotes={savingNotes === goal.id}
+                onSaveNotes={(notes) => handleSaveCoachNotes(goal.id, notes)}
+                onEdit={() => setEditingId(goal.id)}
+                onDelete={() => handleDelete(goal.id)}
+              />
+            )
+          )}
         </div>
       )}
 
@@ -214,10 +235,14 @@ function WeeklyGoalCard({
   goal,
   savingNotes,
   onSaveNotes,
+  onEdit,
+  onDelete,
 }: {
   goal: WeeklyGoal;
   savingNotes: boolean;
   onSaveNotes: (notes: string) => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const [notes, setNotes] = useState(goal.coach_notes || "");
   const [dirty, setDirty] = useState(false);
@@ -240,6 +265,21 @@ function WeeklyGoalCard({
               </span>
             )}
           </div>
+        </div>
+        {/* Edit & Delete */}
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <button
+            onClick={onEdit}
+            className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+          >
+            Edit
+          </button>
+          <button
+            onClick={onDelete}
+            className="text-xs text-red-400 hover:text-red-600"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
@@ -282,5 +322,89 @@ function WeeklyGoalCard({
         )}
       </div>
     </div>
+  );
+}
+
+function WeeklyEditForm({
+  goal,
+  onCancel,
+  onSaved,
+}: {
+  goal: WeeklyGoal;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [title, setTitle] = useState(goal.title);
+  const [status, setStatus] = useState(goal.status);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    const result = await updateWeeklyGoal(goal.id, { title, status });
+    if (result.error) {
+      setError(result.error);
+      setSaving(false);
+    } else {
+      onSaved();
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="border border-brand-200 rounded-xl p-4 bg-brand-50/30"
+    >
+      <h4 className="text-sm font-semibold text-txt-900 mb-3">
+        Edit Weekly Goal
+      </h4>
+      <div className="space-y-3">
+        <div>
+          <label className="text-[11px] font-medium text-txt-600 mb-1 block">
+            Title
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            className="w-full px-2.5 py-2 text-xs border border-surface-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+          />
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-txt-600 mb-1 block">
+            Status
+          </label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full px-2.5 py-2 text-xs border border-surface-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+          >
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+            <option value="partial">Partial</option>
+            <option value="missed">Missed</option>
+          </select>
+        </div>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2 text-xs font-medium rounded-lg border border-surface-300 text-txt-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 py-2 text-xs font-semibold rounded-lg bg-txt-900 text-white disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </form>
   );
 }
