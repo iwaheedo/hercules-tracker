@@ -156,25 +156,31 @@ function SignupForm() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setRole("coach")}
-                className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition ${
-                  role === "coach"
-                    ? "bg-brand-50 border-brand-500 text-brand-600"
-                    : "bg-white border-surface-300 text-txt-500 hover:border-txt-400"
-                }`}
-              >
-                Coach
-              </button>
-              <button
-                type="button"
                 onClick={() => setRole("client")}
                 className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition ${
                   role === "client"
-                    ? "bg-brand-50 border-brand-500 text-brand-600"
+                    ? "bg-brand-50 border-brand-500 text-brand-600 ring-1 ring-brand-500/20"
                     : "bg-white border-surface-300 text-txt-500 hover:border-txt-400"
                 }`}
               >
                 Client
+                <span className="block text-[11px] font-normal mt-0.5 opacity-75">
+                  Track your goals
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("coach")}
+                className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition ${
+                  role === "coach"
+                    ? "bg-brand-50 border-brand-500 text-brand-600 ring-1 ring-brand-500/20"
+                    : "bg-white border-surface-300 text-txt-500 hover:border-txt-400"
+                }`}
+              >
+                Coach
+                <span className="block text-[11px] font-normal mt-0.5 opacity-75">
+                  Manage clients
+                </span>
               </button>
             </div>
           </div>
