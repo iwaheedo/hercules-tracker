@@ -181,7 +181,7 @@ export function AddClientForm() {
                     {/* WhatsApp share */}
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
-                        `Hey ${name}! I've set you up on Hercules to track your goals. Sign up here: ${inviteLink}`
+                        `Hey ${name}! I've set you up on Hercules — a coaching platform to help you reach your peak potential. Check it out and sign up here: ${inviteLink}`
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
