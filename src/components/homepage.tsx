@@ -232,7 +232,7 @@ export function Homepage() {
         <div className="max-w-[900px] mx-auto flex flex-col md:flex-row items-center gap-16">
           <div className="flex-shrink-0 w-[280px] h-[280px] rounded-2xl overflow-hidden relative">
             <Image
-              src="/waheed.png"
+              src="/waheed.jpg"
               alt="Waheed Nabeel"
               fill
               className="object-cover"
