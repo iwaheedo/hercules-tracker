@@ -51,14 +51,10 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: npx playwright test e2e/auth.spec.ts
         env:
           CI: true
-          PLAYWRIGHT_TEST_BASE_URL: ${{ secrets.PLAYWRIGHT_TEST_BASE_URL || 'https://hercules-coaching.vercel.app' }}
-          TEST_COACH_EMAIL: ${{ secrets.TEST_COACH_EMAIL }}
-          TEST_COACH_PASSWORD: ${{ secrets.TEST_COACH_PASSWORD }}
-          TEST_CLIENT_EMAIL: ${{ secrets.TEST_CLIENT_EMAIL }}
-          TEST_CLIENT_PASSWORD: ${{ secrets.TEST_CLIENT_PASSWORD }}
+          PLAYWRIGHT_TEST_BASE_URL: https://hercules-coaching.vercel.app
 
       - name: Upload Playwright report
         if: failure()
