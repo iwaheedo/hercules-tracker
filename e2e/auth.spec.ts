@@ -1,6 +1,16 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Authentication", () => {
+  test("homepage renders for unauthenticated users", async ({ page }) => {
+    await page.goto("/");
+
+    // Key homepage elements
+    await expect(page.getByRole("link", { name: "Hercules" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Get Started" }).first()).toBeVisible();
+    await expect(page.getByText("Peak Potential").first()).toBeVisible();
+  });
+
   test("redirects unauthenticated user to /login", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/.*login/);
@@ -31,6 +41,21 @@ test.describe("Authentication", () => {
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
     await expect(page.locator("text=Sign up")).toBeVisible();
+  });
+
+  test("signup page renders with Client selected by default", async ({
+    page,
+  }) => {
+    await page.goto("/signup");
+
+    await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Client/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Coach/ })).toBeVisible();
+    await expect(page.getByText("Track your goals")).toBeVisible();
+
+    // Client button should be visually selected (has brand border)
+    const clientButton = page.getByRole("button", { name: /Client/ });
+    await expect(clientButton).toHaveClass(/border-brand-500/);
   });
 
   test("shows error with invalid credentials", async ({ page }) => {
