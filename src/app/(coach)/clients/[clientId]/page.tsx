@@ -7,8 +7,10 @@ import { QuarterlyTab } from "./quarterly-tab";
 import { WeeklyTab } from "./weekly-tab";
 import { CheckinsTab } from "./checkins-tab";
 import { ActivityTab } from "./activity-tab";
+import { PurposeTab } from "./purpose-tab";
 
 const TABS = [
+  { id: "purpose", label: "Purpose & Why" },
   { id: "3year", label: "3-Year Goals" },
   { id: "quarterly", label: "Quarterly" },
   { id: "weekly", label: "Weekly" },
@@ -36,12 +38,14 @@ export default async function ClientDetailPage({
   // Verify coach-client relationship
   const { data: relationship } = await supabase
     .from("coach_clients")
-    .select("id")
+    .select("id, engagement_start")
     .eq("coach_id", user.id)
     .eq("client_id", clientId)
     .single();
 
   if (!relationship) redirect("/clients");
+
+  const engagementStart: string | null = relationship.engagement_start;
 
   // Get client profile
   const { data: client } = await supabase
@@ -101,41 +105,52 @@ export default async function ClientDetailPage({
       .order("category");
     goals = parentGoals;
   } else if (tab === "weekly") {
-    // Calculate week start
+    // Calculate week start (used for display only, not filtering)
     const today = new Date();
     const day = today.getDay();
     const monday = new Date(today);
     monday.setDate(today.getDate() - day + (day === 0 ? -6 : 1));
     const weekStart = week || monday.toISOString().split("T")[0];
 
-    const { data } = await supabase
-      .from("weekly_goals")
-      .select(
-        `
-        *,
-        quarterly_goal:quarterly_goals (
-          id,
-          title,
-          goal:goals (
-            id,
-            title,
-            category
-          )
-        )
-      `
-      )
-      .eq("client_id", clientId)
-      .eq("week_start", weekStart)
-      .order("created_at");
-    weeklyGoals = data;
-
-    // Also get quarterly goals for the "add" dropdown
-    const { data: quarters } = await supabase
+    // Get active quarterly goals for this client (within current quarter)
+    const { data: activeQuarters } = await supabase
       .from("quarterly_goals")
-      .select("id, title, goal:goals(category)")
+      .select("id, title, quarter_start, quarter_end, goal:goals(category)")
       .eq("client_id", clientId)
       .eq("status", "active");
-    quarterlyGoals = quarters;
+
+    // Find quarterly goals whose quarter contains the selected week
+    const activeQIds = (activeQuarters || [])
+      .filter((q) => q.quarter_start <= weekStart && q.quarter_end >= weekStart)
+      .map((q) => q.id);
+
+    if (activeQIds.length > 0) {
+      const { data } = await supabase
+        .from("weekly_goals")
+        .select(
+          `
+          *,
+          quarterly_goal:quarterly_goals (
+            id,
+            title,
+            goal:goals (
+              id,
+              title,
+              category
+            )
+          )
+        `
+        )
+        .eq("client_id", clientId)
+        .in("quarterly_goal_id", activeQIds)
+        .order("created_at");
+      weeklyGoals = data;
+    } else {
+      weeklyGoals = [];
+    }
+
+    // Also get quarterly goals for the "add" dropdown
+    quarterlyGoals = activeQuarters;
   } else if (tab === "checkins") {
     const now = new Date().toISOString();
     const { data: upcoming } = await supabase
@@ -246,13 +261,16 @@ export default async function ClientDetailPage({
         </a>
 
         {/* Client Header */}
-        <ClientHeader client={client} />
+        <ClientHeader client={client} engagementStart={engagementStart} clientId={clientId} />
 
         {/* Tabs */}
         <div className="mt-6 bg-white rounded-xl border border-surface-200 overflow-hidden">
           <TabNav tabs={TABS} activeTab={tab} />
 
           <div className="p-5">
+            {tab === "purpose" && (
+              <PurposeTab purposeText={client.purpose_text || null} />
+            )}
             {tab === "3year" && (
               <GoalsTab goals={goals || []} clientId={clientId} />
             )}
@@ -261,6 +279,7 @@ export default async function ClientDetailPage({
                 quarterlyGoals={quarterlyGoals || []}
                 parentGoals={goals || []}
                 clientId={clientId}
+                engagementStart={engagementStart}
               />
             )}
             {tab === "weekly" && (
@@ -268,6 +287,7 @@ export default async function ClientDetailPage({
                 weeklyGoals={weeklyGoals || []}
                 quarterlyGoals={quarterlyGoals || []}
                 clientId={clientId}
+                engagementStart={engagementStart}
                 weekStart={
                   week ||
                   (() => {

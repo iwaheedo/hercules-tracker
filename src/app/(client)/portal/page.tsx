@@ -4,8 +4,10 @@ import { TabNav } from "@/components/tab-nav";
 import { MyGoalsTab } from "./my-goals-tab";
 import { ThisWeekTab } from "./this-week-tab";
 import { ClientCheckinsTab } from "./checkins-tab";
+import { ClientPurposeTab } from "./purpose-tab";
 
 const TABS = [
+  { id: "purpose", label: "Purpose & Why" },
   { id: "goals", label: "My Goals" },
   { id: "thisweek", label: "This Week" },
   { id: "checkins", label: "Check-ins" },
@@ -37,15 +39,16 @@ export default async function PortalPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("full_name, email, purpose_text")
     .eq("id", user.id)
     .single();
 
-  // Get coach info (for calendar invites)
+  // Get coach info (for calendar invites) and engagement start date
   const { data: coachRelation } = await supabase
     .from("coach_clients")
     .select(
       `
+      engagement_start,
       coach:profiles!coach_clients_coach_id_fkey (
         full_name,
         email
@@ -61,6 +64,8 @@ export default async function PortalPage({
     full_name: string;
     email: string | null;
   } | null;
+
+  const engagementStart: string | null = coachRelation?.engagement_start || null;
 
   // Determine which week to show
   const weekStart = week || getCurrentWeekStart();
@@ -107,27 +112,37 @@ export default async function PortalPage({
       .order("quarter_start", { ascending: false });
     quarterlyGoals = qg;
 
-    // Get weekly goals for the selected week
-    const { data: wg } = await supabase
-      .from("weekly_goals")
-      .select(
-        `
-        *,
-        quarterly_goal:quarterly_goals (
-          id,
-          title,
-          goal:goals (
+    // Get weekly goals for the current quarter (persist across all weeks)
+    const activeQIds = (quarterlyGoals || [])
+      .filter((q: { quarter_start: string; quarter_end: string; status: string }) =>
+        q.status === "active" && q.quarter_start <= weekStart && q.quarter_end >= weekStart
+      )
+      .map((q: { id: string }) => q.id);
+
+    if (activeQIds.length > 0) {
+      const { data: wg } = await supabase
+        .from("weekly_goals")
+        .select(
+          `
+          *,
+          quarterly_goal:quarterly_goals (
             id,
             title,
-            category
+            goal:goals (
+              id,
+              title,
+              category
+            )
           )
+        `
         )
-      `
-      )
-      .eq("client_id", user.id)
-      .eq("week_start", weekStart)
-      .order("created_at");
-    weeklyGoals = wg;
+        .eq("client_id", user.id)
+        .in("quarterly_goal_id", activeQIds)
+        .order("created_at");
+      weeklyGoals = wg;
+    } else {
+      weeklyGoals = [];
+    }
   } else if (tab === "checkins") {
     const now = new Date().toISOString();
 
@@ -201,12 +216,16 @@ export default async function PortalPage({
         <TabNav tabs={TABS} activeTab={tab} />
 
         <div className="p-5">
+          {tab === "purpose" && (
+            <ClientPurposeTab purposeText={profile?.purpose_text || null} />
+          )}
           {tab === "goals" && (
             <MyGoalsTab
               goals={goals || []}
               quarterlyGoals={quarterlyGoals || []}
               weeklyGoals={weeklyGoals || []}
               userId={user.id}
+              engagementStart={engagementStart}
             />
           )}
           {tab === "thisweek" && (

@@ -17,6 +17,7 @@ import {
   updateWeeklyGoal,
   deleteWeeklyGoal,
 } from "@/app/actions/weekly-goals";
+import { getEngagementQuarters, type QuarterOption } from "@/lib/quarters";
 
 interface Goal {
   id: string;
@@ -75,11 +76,13 @@ export function MyGoalsTab({
   quarterlyGoals,
   weeklyGoals,
   userId,
+  engagementStart,
 }: {
   goals: Goal[];
   quarterlyGoals: QuarterlyGoal[];
   weeklyGoals: WeeklyGoal[];
   userId: string;
+  engagementStart: string | null;
 }) {
   const [subTab, setSubTab] = useState("3year");
 
@@ -91,7 +94,7 @@ export function MyGoalsTab({
 
       {subTab === "3year" && <ThreeYearView goals={goals} userId={userId} />}
       {subTab === "quarterly" && (
-        <QuarterlyView goals={quarterlyGoals} parentGoals={goals} userId={userId} />
+        <QuarterlyView goals={quarterlyGoals} parentGoals={goals} userId={userId} engagementStart={engagementStart} />
       )}
       {subTab === "weekly" && (
         <WeeklyView goals={weeklyGoals} quarterlyGoals={quarterlyGoals} userId={userId} />
@@ -276,31 +279,12 @@ function GoalEditForm({ goal, onCancel, onSaved }: { goal: Goal; onCancel: () =>
 
 // ========== QUARTERLY GOALS ==========
 
-function getQuarterOptions() {
-  const options = [];
-  const now = new Date();
-  const currentQuarter = Math.floor(now.getMonth() / 3);
-  const currentYear = now.getFullYear();
-
-  for (let offset = -4; offset <= 4; offset++) {
-    const totalQuarters = currentQuarter + offset;
-    const y = currentYear + Math.floor(totalQuarters / 4) + (totalQuarters < 0 ? -1 : 0);
-    const q = ((totalQuarters % 4) + 4) % 4;
-    const startMonth = q * 3;
-    const start = new Date(y, startMonth, 1);
-    const end = new Date(y, startMonth + 3, 0);
-    const quarterNum = q + 1;
-    const label = `Q${quarterNum} ${y} (${start.toLocaleDateString("en-US", { month: "short" })} – ${end.toLocaleDateString("en-US", { month: "short" })})`;
-    options.push({
-      label,
-      startDate: start.toISOString().split("T")[0],
-      endDate: end.toISOString().split("T")[0],
-    });
-  }
-  return options;
+function getQuarterOptions(engagementStart: string | null): QuarterOption[] {
+  if (!engagementStart) return [];
+  return getEngagementQuarters(engagementStart);
 }
 
-function QuarterlyView({ goals, parentGoals, userId }: { goals: QuarterlyGoal[]; parentGoals: Goal[]; userId: string }) {
+function QuarterlyView({ goals, parentGoals, userId, engagementStart }: { goals: QuarterlyGoal[]; parentGoals: Goal[]; userId: string; engagementStart: string | null }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const router = useRouter();
@@ -355,7 +339,7 @@ function QuarterlyView({ goals, parentGoals, userId }: { goals: QuarterlyGoal[];
 
       {parentGoals.length > 0 && (
         showForm ? (
-          <AddQuarterlyForm parentGoals={parentGoals} clientId={userId} onCancel={() => setShowForm(false)} onSaved={() => { setShowForm(false); router.refresh(); }} />
+          <AddQuarterlyForm parentGoals={parentGoals} clientId={userId} engagementStart={engagementStart} onCancel={() => setShowForm(false)} onSaved={() => { setShowForm(false); router.refresh(); }} />
         ) : (
           <button onClick={() => setShowForm(true)} className="w-full py-2.5 border-2 border-dashed border-surface-300 rounded-xl text-sm font-medium text-txt-500 hover:border-brand-400 hover:text-brand-600 transition">+ Add Quarterly Goal</button>
         )
@@ -396,12 +380,13 @@ function QuarterlyCard({ goal, onEdit, onDeleted }: { goal: QuarterlyGoal; onEdi
   );
 }
 
-function AddQuarterlyForm({ parentGoals, clientId, onCancel, onSaved }: { parentGoals: Goal[]; clientId: string; onCancel: () => void; onSaved: () => void }) {
-  const quarterOptions = getQuarterOptions();
+function AddQuarterlyForm({ parentGoals, clientId, engagementStart, onCancel, onSaved }: { parentGoals: Goal[]; clientId: string; engagementStart: string | null; onCancel: () => void; onSaved: () => void }) {
+  const quarterOptions = getQuarterOptions(engagementStart);
+  const currentIdx = quarterOptions.findIndex((q) => q.isCurrent);
   const [goalId, setGoalId] = useState(parentGoals[0]?.id || "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [quarterIdx, setQuarterIdx] = useState(4); // current quarter (middle of 9 options)
+  const [quarterIdx, setQuarterIdx] = useState(currentIdx >= 0 ? currentIdx : 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

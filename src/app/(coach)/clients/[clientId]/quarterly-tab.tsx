@@ -10,6 +10,7 @@ import {
   deleteQuarterlyGoal,
 } from "@/app/actions/quarterly-goals";
 import { useRouter } from "next/navigation";
+import { getEngagementQuarters, type QuarterOption } from "@/lib/quarters";
 
 interface QuarterlyGoal {
   id: string;
@@ -40,10 +41,12 @@ export function QuarterlyTab({
   quarterlyGoals,
   parentGoals,
   clientId,
+  engagementStart,
 }: {
   quarterlyGoals: QuarterlyGoal[];
   parentGoals: ParentGoal[];
   clientId: string;
+  engagementStart: string | null;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -66,29 +69,16 @@ export function QuarterlyTab({
     {} as Record<string, { parent: QuarterlyGoal["goal"]; goals: QuarterlyGoal[] }>
   );
 
-  function getQuarterOptions() {
-    const options = [];
-    const now = new Date();
-    const currentQuarter = Math.floor(now.getMonth() / 3);
-    const currentYear = now.getFullYear();
-    for (let offset = -4; offset <= 4; offset++) {
-      const totalQuarters = currentQuarter + offset;
-      const y = currentYear + Math.floor(totalQuarters / 4) + (totalQuarters < 0 ? -1 : 0);
-      const q = ((totalQuarters % 4) + 4) % 4;
-      const startMonth = q * 3;
-      const start = new Date(y, startMonth, 1);
-      const end = new Date(y, startMonth + 3, 0);
-      const quarterNum = q + 1;
-      const label = `Q${quarterNum} ${y} (${start.toLocaleDateString("en-US", { month: "short" })} – ${end.toLocaleDateString("en-US", { month: "short" })})`;
-      options.push({ label, startDate: start.toISOString().split("T")[0], endDate: end.toISOString().split("T")[0] });
-    }
-    return options;
+  function getQuarterOptions(): QuarterOption[] {
+    if (!engagementStart) return [];
+    return getEngagementQuarters(engagementStart);
   }
 
   async function handleCreate(formData: FormData) {
     setLoading(true);
     const quarterIdx = Number(formData.get("quarter_idx"));
     const qOptions = getQuarterOptions();
+    if (!qOptions[quarterIdx]) { setLoading(false); return; }
     const q = qOptions[quarterIdx];
 
     await createQuarterlyGoal({
@@ -118,7 +108,13 @@ export function QuarterlyTab({
 
   return (
     <div>
-      {Object.keys(grouped).length === 0 && !showForm ? (
+      {!engagementStart ? (
+        <div className="text-center py-8">
+          <p className="text-sm text-txt-500 mb-3">
+            Set the engagement start date in the client header to enable quarterly goals.
+          </p>
+        </div>
+      ) : Object.keys(grouped).length === 0 && !showForm ? (
         <div className="text-center py-8">
           <p className="text-sm text-txt-500 mb-3">
             {parentGoals.length === 0
@@ -236,7 +232,7 @@ export function QuarterlyTab({
                 </label>
                 <select
                   name="quarter_idx"
-                  defaultValue={4}
+                  defaultValue={getQuarterOptions().findIndex((q) => q.isCurrent)}
                   required
                   className="w-full px-3 py-2 text-sm border border-surface-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white"
                 >

@@ -27,6 +27,21 @@ export async function getWeeklyGoals(clientId: string, weekStart?: string) {
 
   const ws = weekStart || getCurrentWeekStart();
 
+  // Find active quarterly goals whose quarter contains this week
+  const { data: activeQuarters } = await supabase
+    .from("quarterly_goals")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("status", "active")
+    .lte("quarter_start", ws)
+    .gte("quarter_end", ws);
+
+  const activeQIds = (activeQuarters || []).map((q) => q.id);
+
+  if (activeQIds.length === 0) {
+    return { data: [], error: null };
+  }
+
   const { data, error } = await supabase
     .from("weekly_goals")
     .select(
@@ -44,7 +59,7 @@ export async function getWeeklyGoals(clientId: string, weekStart?: string) {
     `
     )
     .eq("client_id", clientId)
-    .eq("week_start", ws)
+    .in("quarterly_goal_id", activeQIds)
     .order("created_at");
 
   if (error) return { data: null, error: error.message };
@@ -73,6 +88,21 @@ export async function getWeeklyGoalsAllClients(weekStart?: string) {
 
   const clientIds = relationships.map((r) => r.client_id);
 
+  // Find active quarterly goals whose quarter contains this week
+  const { data: activeQuarters } = await supabase
+    .from("quarterly_goals")
+    .select("id")
+    .in("client_id", clientIds)
+    .eq("status", "active")
+    .lte("quarter_start", ws)
+    .gte("quarter_end", ws);
+
+  const activeQIds = (activeQuarters || []).map((q) => q.id);
+
+  if (activeQIds.length === 0) {
+    return { data: [], error: null };
+  }
+
   const { data, error } = await supabase
     .from("weekly_goals")
     .select(
@@ -94,7 +124,7 @@ export async function getWeeklyGoalsAllClients(weekStart?: string) {
     `
     )
     .in("client_id", clientIds)
-    .eq("week_start", ws)
+    .in("quarterly_goal_id", activeQIds)
     .order("created_at");
 
   if (error) return { data: null, error: error.message };

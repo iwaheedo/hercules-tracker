@@ -15,7 +15,7 @@ const categoryConfig: Record<
     className: "bg-teal-100 text-teal-700",
   },
   spirituality: {
-    label: "Spirituality",
+    label: "Spirituality & Psychological Wellbeing",
     className: "bg-amber-100 text-amber-700",
   },
 };
@@ -43,5 +43,5 @@ export const CATEGORIES = [
   { value: "professional", label: "Professional, Business & Finance" },
   { value: "fitness", label: "Fitness & Health" },
   { value: "relationships", label: "Relationships & Socials" },
-  { value: "spirituality", label: "Spirituality" },
+  { value: "spirituality", label: "Spirituality & Psychological Wellbeing" },
 ] as const;

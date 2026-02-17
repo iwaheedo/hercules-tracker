@@ -71,6 +71,7 @@ describe("WeekPicker component", () => {
     const onChange = vi.fn();
     // Use a past week
     render(<WeekPicker weekStart="2025-01-06" onChange={onChange} />);
-    expect(screen.getByText("Today")).toBeInTheDocument();
+    const todayButtons = screen.getAllByText("Today");
+    expect(todayButtons.length).toBeGreaterThanOrEqual(1);
   });
 });

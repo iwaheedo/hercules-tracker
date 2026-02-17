@@ -11,7 +11,7 @@ describe("CategoryTag", () => {
     { value: "professional", label: "Professional, Business & Finance", expectedClass: "bg-purple-100" },
     { value: "fitness", label: "Fitness & Health", expectedClass: "bg-blue-100" },
     { value: "relationships", label: "Relationships & Socials", expectedClass: "bg-teal-100" },
-    { value: "spirituality", label: "Spirituality", expectedClass: "bg-amber-100" },
+    { value: "spirituality", label: "Spirituality & Psychological Wellbeing", expectedClass: "bg-amber-100" },
   ];
 
   categories.forEach(({ value, label, expectedClass }) => {
@@ -37,7 +37,7 @@ describe("getCategoryLabel", () => {
     expect(getCategoryLabel("professional")).toBe("Professional, Business & Finance");
     expect(getCategoryLabel("fitness")).toBe("Fitness & Health");
     expect(getCategoryLabel("relationships")).toBe("Relationships & Socials");
-    expect(getCategoryLabel("spirituality")).toBe("Spirituality");
+    expect(getCategoryLabel("spirituality")).toBe("Spirituality & Psychological Wellbeing");
   });
 
   it("returns the raw string for unknown category", () => {

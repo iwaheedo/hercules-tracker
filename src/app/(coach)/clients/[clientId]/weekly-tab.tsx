@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { CategoryTag } from "@/components/category-tag";
-import { WeekPicker, getCurrentWeekStart, getWeekEnd } from "@/components/week-picker";
+import { getWeekEnd } from "@/components/week-picker";
 import { createWeeklyGoal, updateWeeklyGoal, deleteWeeklyGoal } from "@/app/actions/weekly-goals";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { getCurrentQuarter } from "@/lib/quarters";
+import { useRouter } from "next/navigation";
 
 interface WeeklyGoal {
   id: string;
@@ -36,29 +37,21 @@ export function WeeklyTab({
   quarterlyGoals,
   clientId,
   weekStart,
+  engagementStart,
 }: {
   weeklyGoals: WeeklyGoal[];
   quarterlyGoals: QuarterlyOption[];
   clientId: string;
   weekStart: string;
+  engagementStart: string | null;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingNotes, setSavingNotes] = useState<string | null>(null);
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  const handleWeekChange = useCallback(
-    (newWeek: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("tab", "weekly");
-      params.set("week", newWeek);
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [router, pathname, searchParams]
-  );
+  const currentQuarter = engagementStart ? getCurrentQuarter(engagementStart) : null;
 
   async function handleCreate(formData: FormData) {
     setLoading(true);
@@ -97,9 +90,17 @@ export function WeeklyTab({
 
   return (
     <div>
-      {/* Week Picker */}
+      {/* Quarter Header */}
       <div className="flex items-center justify-between mb-5">
-        <WeekPicker weekStart={weekStart} onChange={handleWeekChange} />
+        {currentQuarter ? (
+          <div className="text-sm font-semibold text-txt-900">
+            {currentQuarter.label}
+          </div>
+        ) : (
+          <div className="text-sm text-txt-500">
+            {engagementStart ? "Between quarters" : "Set engagement date to enable quarters"}
+          </div>
+        )}
       </div>
 
       {/* Status summary */}

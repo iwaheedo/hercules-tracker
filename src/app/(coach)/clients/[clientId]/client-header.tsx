@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/status-badge";
 import { removeClient } from "@/app/actions/clients";
+import { setEngagementStart } from "@/app/actions/engagement";
 
 interface ClientProfile {
   id: string;
@@ -14,10 +15,28 @@ interface ClientProfile {
   created_at: string;
 }
 
-export function ClientHeader({ client }: { client: ClientProfile }) {
+export function ClientHeader({
+  client,
+  engagementStart,
+  clientId,
+}: {
+  client: ClientProfile;
+  engagementStart: string | null;
+  clientId: string;
+}) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [engagementDate, setEngagementDate] = useState(engagementStart || "");
+  const [savingDate, setSavingDate] = useState(false);
   const router = useRouter();
+
+  async function handleSetEngagement() {
+    if (!engagementDate) return;
+    setSavingDate(true);
+    await setEngagementStart(clientId, engagementDate);
+    setSavingDate(false);
+    router.refresh();
+  }
 
   const initials = client.full_name
     .split(" ")
@@ -80,6 +99,32 @@ export function ClientHeader({ client }: { client: ClientProfile }) {
                 </svg>
                 Member since {memberSince}
               </span>
+
+              {/* Engagement start */}
+              {engagementStart ? (
+                <span className="flex items-center gap-1 text-brand-600 font-medium">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Engagement: {new Date(engagementStart + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <input
+                    type="date"
+                    value={engagementDate}
+                    onChange={(e) => setEngagementDate(e.target.value)}
+                    className="px-2 py-1 text-xs border border-surface-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-white"
+                  />
+                  <button
+                    onClick={handleSetEngagement}
+                    disabled={!engagementDate || savingDate}
+                    className="px-2.5 py-1 text-xs font-medium bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition disabled:opacity-50"
+                  >
+                    {savingDate ? "..." : "Set Start"}
+                  </button>
+                </span>
+              )}
             </div>
           </div>
 
