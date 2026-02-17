@@ -6,12 +6,19 @@ import { CategoryTag } from "@/components/category-tag";
 import { getWeekEnd } from "@/components/week-picker";
 import { createWeeklyGoal, updateWeeklyGoal, deleteWeeklyGoal } from "@/app/actions/weekly-goals";
 import { getCurrentQuarter } from "@/lib/quarters";
+import {
+  type DailyStatus,
+  DAY_KEYS,
+  DAY_LABELS,
+  getTodayIndex,
+} from "@/lib/daily-status";
 import { useRouter } from "next/navigation";
 
 interface WeeklyGoal {
   id: string;
   title: string;
   status: string;
+  daily_status: DailyStatus | null;
   client_notes: string | null;
   coach_notes: string | null;
   week_start: string;
@@ -52,6 +59,8 @@ export function WeeklyTab({
   const router = useRouter();
 
   const currentQuarter = engagementStart ? getCurrentQuarter(engagementStart) : null;
+  const todayIdx = getTodayIndex(weekStart);
+  const isCurrent = todayIdx >= 0;
 
   async function handleCreate(formData: FormData) {
     setLoading(true);
@@ -106,6 +115,7 @@ export function WeeklyTab({
       {/* Status summary */}
       {counts.total > 0 && (
         <div className="flex gap-3 mb-4 text-xs">
+          <span className="font-medium text-txt-700">{counts.total} goals</span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-green-500" />
             {counts.completed} completed
@@ -162,6 +172,9 @@ export function WeeklyTab({
               <WeeklyGoalCard
                 key={goal.id}
                 goal={goal}
+                weekStart={weekStart}
+                todayIdx={todayIdx}
+                isCurrent={isCurrent}
                 savingNotes={savingNotes === goal.id}
                 onSaveNotes={(notes) => handleSaveCoachNotes(goal.id, notes)}
                 onEdit={() => setEditingId(goal.id)}
@@ -232,14 +245,89 @@ export function WeeklyTab({
   );
 }
 
+// ── Read-only daily progress grid for coach view ──
+
+function DailyProgressRow({
+  dailyStatus,
+  weekStart,
+  todayIdx,
+  isCurrent,
+}: {
+  dailyStatus: DailyStatus;
+  weekStart: string;
+  todayIdx: number;
+  isCurrent: boolean;
+}) {
+  const doneCount = DAY_KEYS.filter((k) => dailyStatus[k] === true).length;
+  const trackedCount = DAY_KEYS.filter(
+    (k) => dailyStatus[k] === true || dailyStatus[k] === false
+  ).length;
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-[11px] font-medium text-txt-500">Daily Progress</span>
+        {trackedCount > 0 && (
+          <span className="text-[10px] font-medium text-txt-400">
+            {doneCount}/{trackedCount} days
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {DAY_KEYS.map((key, i) => {
+          const value = dailyStatus[key];
+          const isToday = isCurrent && todayIdx === i;
+          const isFuture = isCurrent && i > todayIdx;
+
+          return (
+            <div
+              key={key}
+              className={`flex flex-col items-center gap-0.5 py-1.5 rounded-lg ${
+                isToday ? "ring-1 ring-brand-400" : ""
+              } ${isFuture ? "opacity-30" : ""} ${
+                value === true
+                  ? "bg-green-50"
+                  : value === false
+                    ? "bg-red-50"
+                    : "bg-surface-50"
+              }`}
+            >
+              {value === true ? (
+                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : value === false ? (
+                <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${isToday ? "bg-brand-400" : "bg-surface-300"}`} />
+              )}
+              <span className="text-[9px] font-medium text-txt-400">
+                {DAY_LABELS[key]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function WeeklyGoalCard({
   goal,
+  weekStart,
+  todayIdx,
+  isCurrent,
   savingNotes,
   onSaveNotes,
   onEdit,
   onDelete,
 }: {
   goal: WeeklyGoal;
+  weekStart: string;
+  todayIdx: number;
+  isCurrent: boolean;
   savingNotes: boolean;
   onSaveNotes: (notes: string) => void;
   onEdit: () => void;
@@ -247,6 +335,7 @@ function WeeklyGoalCard({
 }) {
   const [notes, setNotes] = useState(goal.coach_notes || "");
   const [dirty, setDirty] = useState(false);
+  const dailyStatus = (goal.daily_status || {}) as DailyStatus;
 
   const category = goal.quarterly_goal?.goal?.category;
 
@@ -262,7 +351,7 @@ function WeeklyGoalCard({
             {category && <CategoryTag category={category} />}
             {goal.quarterly_goal && (
               <span className="text-[11px] text-txt-400">
-                → {goal.quarterly_goal.title}
+                {goal.quarterly_goal.title}
               </span>
             )}
           </div>
@@ -283,6 +372,14 @@ function WeeklyGoalCard({
           </button>
         </div>
       </div>
+
+      {/* Daily progress grid (read-only) */}
+      <DailyProgressRow
+        dailyStatus={dailyStatus}
+        weekStart={weekStart}
+        todayIdx={todayIdx}
+        isCurrent={isCurrent}
+      />
 
       {/* Client notes (read-only) */}
       {goal.client_notes && (

@@ -101,8 +101,8 @@ export function QuarterlyTab({
   }
 
   const formatQuarter = (start: string, end: string) => {
-    const s = new Date(start);
-    const e = new Date(end);
+    const s = new Date(start + "T00:00:00");
+    const e = new Date(end + "T00:00:00");
     return `${s.toLocaleDateString("en-US", { month: "short" })} – ${e.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
   };
 

@@ -356,7 +356,7 @@ function QuarterlyCard({ goal, onEdit, onDeleted }: { goal: QuarterlyGoal; onEdi
     await deleteQuarterlyGoal(goal.id);
     onDeleted();
   }
-  const quarterLabel = `${new Date(goal.quarter_start).toLocaleDateString("en-US", { month: "short" })} – ${new Date(goal.quarter_end).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
+  const quarterLabel = `${new Date(goal.quarter_start + "T00:00:00").toLocaleDateString("en-US", { month: "short" })} – ${new Date(goal.quarter_end + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
 
   return (
     <div className="p-3 border border-surface-200 rounded-lg">
@@ -447,7 +447,7 @@ function QuarterlyEditForm({ goal, onCancel, onSaved }: { goal: QuarterlyGoal; o
     onSaved();
   }
 
-  const quarterLabel = `${new Date(goal.quarter_start).toLocaleDateString("en-US", { month: "short" })} – ${new Date(goal.quarter_end).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
+  const quarterLabel = `${new Date(goal.quarter_start + "T00:00:00").toLocaleDateString("en-US", { month: "short" })} – ${new Date(goal.quarter_end + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
 
   return (
     <form onSubmit={handleSubmit} className="border border-brand-200 rounded-xl p-4 bg-brand-50/30">

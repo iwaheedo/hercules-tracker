@@ -9,6 +9,13 @@ import {
   isValidDate,
   isValidWeeklyStatus,
 } from "@/lib/validation";
+import {
+  type DayKey,
+  type DailyStatus,
+  DAY_KEYS,
+  cycleDay,
+  computeStatusFromDaily,
+} from "@/lib/daily-status";
 
 function getCurrentWeekStart(): string {
   const today = new Date();
@@ -262,6 +269,54 @@ export async function updateWeeklyGoalStatus(
   clientNotes?: string
 ) {
   return updateWeeklyGoal(goalId, { status, clientNotes });
+}
+
+/**
+ * Toggle a single day's status for a weekly goal.
+ * Cycles: null → true → false → null
+ * Auto-computes the overall status from daily_status.
+ */
+export async function toggleDayStatus(goalId: string, day: DayKey) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (!isValidUUID(goalId)) return { error: "Invalid goal ID" };
+  if (!DAY_KEYS.includes(day)) return { error: "Invalid day" };
+
+  const { data: goal } = await supabase
+    .from("weekly_goals")
+    .select("*, daily_status")
+    .eq("id", goalId)
+    .single();
+
+  if (!goal) return { error: "Weekly goal not found" };
+
+  const dailyStatus: DailyStatus = (goal.daily_status as DailyStatus) || {};
+  const currentVal = dailyStatus[day];
+  const newVal = cycleDay(currentVal);
+
+  const updatedDaily = { ...dailyStatus };
+  if (newVal === null) {
+    delete updatedDaily[day];
+  } else {
+    updatedDaily[day] = newVal;
+  }
+
+  const newStatus = computeStatusFromDaily(updatedDaily, goal.week_start);
+
+  const { error } = await supabase
+    .from("weekly_goals")
+    .update({ daily_status: updatedDaily, status: newStatus })
+    .eq("id", goalId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/clients/${goal.client_id}`);
+  revalidatePath("/portal");
+  return { error: null, dailyStatus: updatedDaily, status: newStatus };
 }
 
 export async function deleteWeeklyGoal(goalId: string) {
