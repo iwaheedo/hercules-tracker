@@ -26,7 +26,7 @@ export default async function ClientDetailPage({
   searchParams: Promise<{ tab?: string; week?: string }>;
 }) {
   const { clientId } = await params;
-  const { tab = "3year", week } = await searchParams;
+  const { tab = "purpose", week } = await searchParams;
 
   const supabase = await createClient();
   const {

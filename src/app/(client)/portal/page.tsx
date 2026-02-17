@@ -26,7 +26,7 @@ export default async function PortalPage({
 }: {
   searchParams: Promise<{ tab?: string; week?: string }>;
 }) {
-  const { tab = "goals", week } = await searchParams;
+  const { tab = "purpose", week } = await searchParams;
 
   const supabase = await createClient();
   const {
