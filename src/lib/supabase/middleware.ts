@@ -57,7 +57,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && isAuthRoute) {
     const hasInvite = request.nextUrl.pathname.startsWith("/signup") &&
-      request.nextUrl.searchParams.has("invite");
+      (request.nextUrl.searchParams.has("token") || request.nextUrl.searchParams.has("invite"));
     if (!hasInvite) {
       const url = request.nextUrl.clone();
       url.pathname = "/";

@@ -59,9 +59,12 @@ describe("getGoalsByClient", () => {
   });
 
   it("returns error when Supabase query fails", async () => {
-    mockSupabase.from.mockReturnValue(
-      chainResult({ data: null, error: { message: "DB error" } })
-    );
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === "coach_clients") {
+        return chainResult({ data: { id: "rel-1" }, error: null });
+      }
+      return chainResult({ data: null, error: { message: "DB error" } });
+    });
 
     const result = await getGoalsByClient(CLIENT_ID);
 

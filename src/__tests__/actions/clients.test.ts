@@ -134,6 +134,10 @@ describe("inviteClient", () => {
           return chainResult({ data: [], error: null });
         }
       }
+      if (table === "invite_tokens") {
+        // Token creation → return a token
+        return chainResult({ data: { token: "abc123hex" }, error: null });
+      }
       return chainResult({ data: null, error: null });
     });
 
@@ -142,7 +146,7 @@ describe("inviteClient", () => {
     expect(result.error).toBeNull();
     expect(result.inviteLink).toBeTruthy();
     expect(result.inviteLink).toContain("/signup");
-    expect(result.inviteLink).toContain(`invite=${COACH_ID}`);
+    expect(result.inviteLink).toContain("token=abc123hex");
     expect(result.linked).toBe(false);
   });
 

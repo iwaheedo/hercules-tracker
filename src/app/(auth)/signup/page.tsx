@@ -7,13 +7,31 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 function SignupForm() {
   const searchParams = useSearchParams();
-  const inviteCoachId = searchParams.get("invite");
-  const inviteEmail = searchParams.get("email");
-  const inviteName = searchParams.get("name");
-  const isInvite = !!inviteCoachId;
 
-  const [fullName, setFullName] = useState(inviteName || "");
-  const [email, setEmail] = useState(inviteEmail || "");
+  // New secure token-based invite flow
+  const token = searchParams.get("token");
+
+  // Legacy fallback for old invite links (deprecated — will be removed)
+  const legacyInviteCoachId = searchParams.get("invite");
+  const legacyInviteEmail = searchParams.get("email");
+  const legacyInviteName = searchParams.get("name");
+
+  const [tokenData, setTokenData] = useState<{
+    coach_id: string;
+    email: string;
+    name: string;
+  } | null>(null);
+  const [tokenError, setTokenError] = useState(false);
+  const [tokenLoading, setTokenLoading] = useState(!!token);
+
+  // Resolved invite data (from token or legacy params)
+  const inviteCoachId = tokenData?.coach_id ?? legacyInviteCoachId;
+  const inviteEmail = tokenData?.email ?? legacyInviteEmail;
+  const inviteName = tokenData?.name ?? legacyInviteName;
+  const isInvite = !!(token || legacyInviteCoachId);
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"coach" | "client">("client");
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +42,34 @@ function SignupForm() {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+
+  // Resolve invite token
+  useEffect(() => {
+    if (!token) {
+      setTokenLoading(false);
+      return;
+    }
+    supabase
+      .from("invite_tokens")
+      .select("coach_id, email, name")
+      .eq("token", token)
+      .eq("used", false)
+      .single()
+      .then(({ data, error: err }) => {
+        if (err || !data) {
+          setTokenError(true);
+        } else {
+          setTokenData(data);
+        }
+        setTokenLoading(false);
+      });
+  }, [token, supabase]);
+
+  // Pre-fill form when invite data resolves
+  useEffect(() => {
+    if (inviteName && !fullName) setFullName(inviteName);
+    if (inviteEmail && !email) setEmail(inviteEmail);
+  }, [inviteName, inviteEmail, fullName, email]);
 
   // Check if user is already logged in (coach testing the invite link)
   useEffect(() => {
@@ -77,23 +123,59 @@ function SignupForm() {
       return;
     }
 
+    // Mark invite token as used
+    if (token) {
+      await supabase
+        .from("invite_tokens")
+        .update({ used: true })
+        .eq("token", token);
+    }
+
     if (authData.session) {
-      // Session returned → email confirmation is off, user is signed in
+      // Session returned — email confirmation is off, user is signed in
       router.push("/");
       router.refresh();
     } else if (authData.user && !authData.session) {
-      // User created but no session → email confirmation is required
+      // User created but no session — email confirmation is required
       setNeedsConfirmation(true);
       setLoading(false);
     }
   }
 
-  // Show loading while checking auth state for invite links
-  if (isInvite && !authChecked) {
+  // Show loading while resolving token or checking auth
+  if (tokenLoading || (isInvite && !authChecked)) {
     return (
       <div className="text-center py-4">
         <p className="text-sm text-txt-500">Loading...</p>
       </div>
+    );
+  }
+
+  // Token expired or invalid
+  if (token && tokenError) {
+    return (
+      <>
+        <div className="text-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-txt-900">Invite link expired</h1>
+          <p className="text-sm text-txt-500 mt-2 leading-relaxed">
+            This invite link has expired or has already been used.
+            <br />
+            Please ask your coach to send a new invite.
+          </p>
+        </div>
+
+        <Link
+          href="/signup"
+          className="block w-full py-2.5 px-4 bg-txt-900 text-white text-sm font-semibold rounded-lg hover:bg-txt-700 transition text-center"
+        >
+          Sign up without invite
+        </Link>
+      </>
     );
   }
 

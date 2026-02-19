@@ -3,16 +3,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-const SUPER_COACH_EMAIL = "waheed@empasco.com";
-
 async function verifySuperCoach() {
+  const superEmail = process.env.SUPER_COACH_EMAIL;
+  if (!superEmail) return { supabase: null, error: "Super coach not configured" };
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return { supabase: null, error: "Not authenticated" };
-  if (user.email !== SUPER_COACH_EMAIL)
+  if (user.email !== superEmail)
     return { supabase: null, error: "Not authorized" };
 
   return { supabase, error: null };

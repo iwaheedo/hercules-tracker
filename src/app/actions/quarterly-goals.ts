@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { verifyAccess } from "@/lib/auth-helpers";
 
 export async function getQuarterlyGoals(clientId: string) {
   const supabase = await createClient();
@@ -9,6 +10,10 @@ export async function getQuarterlyGoals(clientId: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };
+
+  if (!await verifyAccess(supabase, user.id, clientId)) {
+    return { data: null, error: "Not authorized" };
+  }
 
   const { data, error } = await supabase
     .from("quarterly_goals")

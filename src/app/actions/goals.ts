@@ -11,6 +11,7 @@ import {
   isValidGoalStatus,
   isValidProgress,
 } from "@/lib/validation";
+import { verifyAccess } from "@/lib/auth-helpers";
 
 export async function getGoalsByClient(clientId: string) {
   const supabase = await createClient();
@@ -18,6 +19,10 @@ export async function getGoalsByClient(clientId: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };
+
+  if (!await verifyAccess(supabase, user.id, clientId)) {
+    return { data: null, error: "Not authorized" };
+  }
 
   const { data, error } = await supabase
     .from("goals")

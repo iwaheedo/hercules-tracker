@@ -16,6 +16,7 @@ import {
   cycleDay,
   computeStatusFromDaily,
 } from "@/lib/daily-status";
+import { verifyAccess } from "@/lib/auth-helpers";
 
 function getCurrentWeekStart(): string {
   const today = new Date();
@@ -31,6 +32,10 @@ export async function getWeeklyGoals(clientId: string, weekStart?: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "Not authenticated" };
+
+  if (!await verifyAccess(supabase, user.id, clientId)) {
+    return { data: null, error: "Not authorized" };
+  }
 
   const ws = weekStart || getCurrentWeekStart();
 

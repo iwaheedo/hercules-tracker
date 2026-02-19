@@ -11,6 +11,8 @@ import { revalidatePath } from "next/cache";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Set the env var the admin module now reads
+  process.env.SUPER_COACH_EMAIL = "waheed@empasco.com";
   // Default: authenticated as the super-admin
   mockSupabase.auth.getUser.mockResolvedValue({
     data: { user: { id: "super-1", email: "waheed@empasco.com" } },

@@ -196,15 +196,22 @@ export async function inviteClient(email: string, name: string) {
     return { error: null, inviteLink: null, linked: true };
   }
 
-  // Client doesn't exist yet — generate an invite link
+  // Client doesn't exist yet — create a secure invite token
+  const { data: tokenRow, error: tokenError } = await supabase
+    .from("invite_tokens")
+    .insert({
+      coach_id: user.id,
+      email: email.toLowerCase(),
+      name: name,
+    })
+    .select("token")
+    .single();
+
+  if (tokenError) return { error: "Failed to create invite", inviteLink: null, linked: false };
+
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL
     || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-  const params = new URLSearchParams({
-    invite: user.id,
-    email: email,
-    name: name,
-  });
-  const inviteLink = `${baseUrl}/signup?${params.toString()}`;
+  const inviteLink = `${baseUrl}/signup?token=${tokenRow.token}`;
 
   revalidatePath("/clients");
   return { error: null, inviteLink, linked: false };
